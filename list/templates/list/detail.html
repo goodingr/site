@@ -1,0 +1,59 @@
+
+         <form method="post" id="form"> 
+                {% csrf_token %}
+                {{ form.as_p }}
+        </form>
+          <div class="card-body">
+            <label for="completed_checkbox" id="checkbox_label"></label>
+            <input type='checkbox' id='completed_checkbox'>
+          </div>
+
+
+<script>
+    $(document).ready(function() {
+        if('{{task.completed}}' == 'True'){
+            $('#completed_checkbox').prop('checked', true);
+            $('#checkbox_label').text('Completed')
+        }
+        else {
+            $('#checkbox_label').text('Incomplete')
+        }
+
+
+        var csrftoken = $("[name=csrfmiddlewaretoken]").val();
+        var update_task = function() {
+            $.ajax({
+                method: "POST",
+                url: '{% url 'list:detail' task.id %}',
+                headers: { "X-CSRFToken": csrftoken },
+                data: { 'task_text' : $('#id_task_text').val(),
+                        'completed' : $('#completed_checkbox').prop('checked') },
+                dataType: 'json',
+                success: function(data) {
+                    console.log(data)
+
+                }
+            });
+        };
+
+        $('#completed_checkbox').click(function() {
+            console.log("checkbox is now " + $('#completed_checkbox').prop('checked'));
+            if ($('#completed_checkbox').prop('checked') == true)
+            {
+                $('#checkbox_label').text('Completed')
+            }
+            else
+            {
+                $('#checkbox_label').text('Incomplete')
+            }
+            update_task();
+        });
+        
+        $("#id_task_text").change(function() {
+            console.log("task text changed")
+            update_task();
+        });
+
+    });
+
+    </script>

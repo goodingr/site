@@ -1,0 +1,216 @@
+{% extends 'list/base.html' %}
+
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col col-tasks">
+            <div class="my-3 p-3 bg-white rounded shadow-sm">
+
+                <div id="task_list" class="masonry">
+              
+               </div>   
+           </div>
+       </div>
+       <div class="col col-detail">
+           <div class="my-3 p-3 bg-white rounded shadow-sm">
+            {% csrf_token %}
+
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">
+                    <button class="btn btn-primary btn-lg" id="new_task_button">
+                        <span id="new_task_icon" class="glyphicon glyphicon-plus"></span>
+                    </button>
+                </span>
+              </div>
+                <textarea class="form-control form-control-lg task_text_input" id="detail-task-text" value="Task Text"> </textarea>
+            </div>
+                
+
+                <button id="completed_button" role="button" class="btn btn-primary btn-lg completed_button active btn-block " data-toggle="button" aria-pressed="true">Complete</button>
+
+        </div>
+    </div>
+</div>
+
+</div>
+ 
+<p><a href="{% url 'list:new' %}"> Create New Task </a></p>
+
+<script>
+
+
+
+class Task {
+
+    constructor(task, id){
+        console.log('task constructor')
+        console.log(task)
+        this._task_text = task.task_text
+        this._completed = task._completed
+        this.date_created = task.date_created
+        this.date_completed = task.date_completed
+        this.id = id
+
+
+        console.log(this)
+    }
+    get task_text() {
+        return this._task_text
+    }
+
+    set task_text(task_text) {
+        this._task_text = task_text
+        $("#content-" + this.id).text(task_text)
+        this.save()
+    }
+    get completed() {
+        return this._completed
+    }
+    set completed(c) {
+        this._completed = c
+        console.log("setting completed")
+        this.save()
+    }
+
+
+
+    toggle_completed() {
+        console.log("toggle completed")
+        this.completed = !this._completed
+    }
+
+    save() {
+        $.ajax({
+            method: "POST",
+            url: '/list/' + this.id + '/',
+            headers: { "X-CSRFToken": csrftoken },
+            data: { 'task_text' : this.task_text,
+                    'completed' : this.completed },
+            dataType: 'json',
+            success: function(data) {
+                if (data[0].fields._completed)
+                {
+                    selected_task.date_completed = data[0].fields.date_completed
+                    $("#completed_button").html("Completed " + selected_task.date_completed)     
+                }
+                else {
+                    selected_task.date_completed = null
+                    $("#completed_button").html("Complete")     
+                }
+                console.log(data)
+            }
+        });
+    }
+    show() {
+        $('#detail-task-text').val(this.task_text)
+        $('#completed_button').setAttribute('aria-pressed', this._completed)
+
+    }
+    fetch() {
+        var self = this
+
+    }
+
+}
+
+var selected_task;
+let tasks = [];
+
+var display_tasks = function() {
+    for(i = 0; i < tasks.length; i++) {
+        var panel = document.createElement("div");
+        var link = document.createElement("div");
+        var content = document.createElement("div");
+        panel.setAttribute('class', 'masonry-panel masonry-panel--pls');
+        link.setAttribute('class', 'task-link');
+        $(link).attr('onclick', 'showTaskDetail(' + i + ')');
+        $(content).addClass("masonry-panel__content bd--grey");
+        $(content).attr('id', 'content-' + tasks[i].id)
+        content.innerHTML = tasks[i].task_text;
+        link.appendChild(content);
+        panel.appendChild(link);
+        $("#task_list").append(panel)
+
+    }
+}
+
+$(document).ready(function(){
+
+    $.ajax({
+        method: 'GET',
+        url: '{% url "list:tasks" %}',
+        success: function(data) {
+            console.log("tasks received")
+            console.log(data)
+            data.forEach((task) => tasks.push(new Task(task.fields, task.pk)));
+            display_tasks();
+        }
+    })
+
+
+    $("#detail-task-text").change(function() {
+            console.log("task text changed")
+            selected_task.task_text = $('#detail-task-text').val()
+        });
+
+    $("#completed_button").click(function() {
+        btn = $("#completed_button")
+        btn.blur()
+        console.log("completed button")
+       // $("#completed_button").button('toggle')
+       console.log(btn.attr('aria-pressed'))
+       console.log(selected_task)
+       selected_task.toggle_completed()
+    });
+
+    $("#new_task_button").click(function() {
+
+        $("#new_task_icon").toggleClass("glyphicon glyphicon-plus")
+        $("#new_task_icon").toggleClass("glyphicon glyphicon-ok")
+    })
+
+});
+
+var csrftoken = $("[name=csrfmiddlewaretoken]").val();
+var update_task = function() {
+    $.ajax({
+        method: "POST",
+        url: '/list/' + task_id,
+        headers: { "X-CSRFToken": csrftoken },
+        data: { 'task_text' : $('#detail-task-text').val(),
+                'completed' : $('#completed_checkbox').prop('checked') },
+        dataType: 'json',
+        success: function(data) {
+            console.log(data)
+
+        }
+    });
+}
+
+showTaskDetail = function(i) {
+    console.log("Task Link Clicked")
+    console.log(tasks[i])
+    selected_task = tasks[i]
+    $('#detail-task-text').val(tasks[i].task_text)
+    $('#completed_button').attr('aria-pressed', selected_task.completed)
+    if(selected_task.completed) {
+        $('#completed_button').removeClass("active")
+        $("#completed_button").html("Completed " + selected_task.date_completed)     
+
+    }
+    else {
+        $("#completed_button").html("Complete")     
+        $('#completed_button').addClass("active")
+    }
+  
+};
+
+
+
+</script>
+
+
+
+{% endblock %}

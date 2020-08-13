@@ -1,0 +1,36 @@
+.container {
+    max-width: 1920px;
+}
+
+.masonry-panel__content { 
+    text-align: center;
+    font-size: 1.8rem;
+    color: black;
+}
+
+
+
+.col-detail {
+    max-width: 800px;
+}
+
+.task_text_input {
+    border: 0px;
+    text-align: center;
+    font-size: 3rem;
+}
+.col-tasks {
+    margin: auto;
+}
+.input-group-text {
+    background: none;
+}
+.completed_button {
+    background-color: gray;
+}
+.completed_button.active: {
+    background: black;
+}
+.btn-primary:not(:disabled):not(.disabled).active, .btn-primary:not(:disabled):not(.disabled):active, .show>.btn-primary.dropdown-toggle {
+    background-color: blue;
+}

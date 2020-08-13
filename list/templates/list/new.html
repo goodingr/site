@@ -1,0 +1,7 @@
+<h1> Create New Task </h1>
+
+<form action="{% url 'list:new' %}" method="post">
+{% csrf_token %}
+{{ form }}
+<input type="submit" value = "Add to list"/>
+</form>
