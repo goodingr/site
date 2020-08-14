@@ -1,5 +1,7 @@
 import re as regex
+from chess.utils import chessboard
 
+BOARDS = []
 
 FEN_NOTATION_REGEX = regex.compile(r"\s*([rnbqkpRNBQKP1-8]+\/){7}([rnbqkpRNBQKP1-8]+)\s[bw-]\s(([a-hkqA-HKQ]{1,4})|(-))\s(([a-h][36])|(-))\s\d+\s\d+\s*")
 
