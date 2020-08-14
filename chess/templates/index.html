@@ -6,7 +6,8 @@
 
 <div class="container">
     <div class="board" style="background: url('{% static 'chess/img/ChessBoard.png' %}') no-repeat ")>
-    
+        {{ board | safe }}
+
     </div>
 </div>
 
