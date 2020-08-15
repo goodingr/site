@@ -105,6 +105,19 @@ class Chessboard:
         self.load_position(fen_notation)
 
 
+    # converts file|rank position notation to (row, col) for 2d array _board index
+    # rank becomes row, file becomes col
+    def convert_to_index(self, position):
+        file = int(position[0])
+        rank = int(position[1])
+        return (rank - 1, file - 1)
+
+    # converts [row][col] into file|rank
+    # ex: square a1. [0][0] -> 11
+    #     square c4 [3][2] -> 34
+    def convert_to_position(self, row, col):
+        return str(col+1) + str(row+1)
+
     # Creates a piece based on the name in FEN notation and appends it to the board
     def create_piece(self, position, name):
         color = None
@@ -187,18 +200,61 @@ class Chessboard:
 
 
     # Returns all legal pawn moves for the given pawn piece
+    # TODO EN PESSANT
     def generate_pawn_moves(self, pawn):
         legal_moves = []
         color = pawn.color
+        row, col = self.convert_to_index(pawn.current_position)
         rank = int(pawn.current_position[1])
-        file = int(pawn.current_position[0])    
+        file = int(pawn.current_position[0])
+        # White Pawn    
         if color == 'w':
             # 1 space ahead of pawn
-            if self._board[rank][file-1].name == 'Blank':
-                legal_move = str(file)+str(rank+1)
+            if self._board[row+1][col].name == 'Blank':
+                legal_move = self.convert_to_position(row + 1, col)
                 legal_moves.append(legal_move)
+                # Check for 2 space move
+                if self._board[row+2][col].name == 'Blank' and row == 1:
+                    legal_move = self.convert_to_position(row + 2, col)
+                    legal_moves.append(legal_move)
+            if col < 7:
+                diagonal = self._board[row+1][col+1]
+                # diagonal right 
+                if diagonal.color == "b" and col < 7:
+                    legal_move = self.convert_to_position(row + 1, col + 1)
+                    legal_moves.append(legal_move)
+            if col > 0:
+                diagonal = self._board[row+1][col-1]
+                # diagonal left
+                if diagonal.color == "b" and col > 0:
+                    legal_move = self.convert_to_position(row + 1, col - 1)
+                    legal_moves.append(legal_move)
+        # Black
+        elif color == 'b':
+            # 1 space ahead of pawn
+            if self._board[row-1][col].name == 'Blank':
+                legal_move = self.convert_to_position(row - 1, col)
+                legal_moves.append(legal_move)
+                # Check for 2 space move
+                if self._board[row-2][col].name == 'Blank' and row == 6:
+                    legal_move = self.convert_to_position(row - 2, col)
+                    legal_moves.append(legal_move)
+            if col < 7:
+                diagonal = self._board[row-1][col+1]
+                # diagonal right 
+                if diagonal.color == "b":
+                    legal_move = self.convert_to_position(row - 1, col + 1)
+                    legal_moves.append(legal_move)
+            if col > 0:        
+                diagonal = self._board[row-1][col-1]
+                # diagonal left
+                if diagonal.color == "b":
+                    legal_move = self.convert_to_position(row - 1, col - 1)
+                    legal_moves.append(legal_move)
 
         return legal_moves
+
+
 
 
     # returns a list of legal moves for the piece in the position
@@ -209,7 +265,8 @@ class Chessboard:
         #move this to helper function
         file = int(position[1])
         rank = int(position[0])
- 
+        
+
         piece = self._board[file -1][rank -1]
 
         if piece.name == "Pawn":

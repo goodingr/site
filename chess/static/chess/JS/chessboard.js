@@ -9,6 +9,7 @@ $(document).ready(function() {
             deselect_square()
         }
         square_selected = target.attr('id')
+        initial_target = target
         target.addClass('highlighted')
     }
     // Removes the highlight class and sets selected_square to null 
@@ -22,7 +23,7 @@ $(document).ready(function() {
     
     var square_selected, square_destination;
     var legal_moves = []
-
+    var initial_target, destination_target
 
     // When a piece is clicked, determine whether to select the square or
     // attemp to move the piece on the selected square to the clicked square (destination)
@@ -40,19 +41,21 @@ $(document).ready(function() {
                 success: function(data) {
                     // Read data into legal_moves
                     // should probably call select_square here
-                    console.log("legal moves: ")
-                    console.log(data)
+                    console.log("legal moves: " + data)
+                    legal_moves = data
                 }
             })
 
         }
         // A square has already been selected.
         else if(square_selected) {
+            destination_target = target
             square_destination = target.attr('id')
-            // TODO Get Legal Moves
-
+            console.log("checking if legal move")
+            console.log(legal_moves)
+            console.log(square_selected)
             // If the clicked square is a legal move for the selected square, send a move request 
-            if (square_selected in legal_moves){
+            if (legal_moves.includes(square_destination)){
                 console.log("MOVE " + square_selected + " to " + square_destination)
                 url = "board/move/" + square_selected + "," + square_destination;
                 $.ajax({
@@ -61,11 +64,17 @@ $(document).ready(function() {
                         console.log("move response: ")
                         console.log(data)
                         // TODO If success, update board display
+                        classes_dest = destination_target.attr("class").split(" ")
+                        classes_init = initial_target.attr("class").split(" ")
+                        classes_dest[1] = classes_init[1]
+                        classes_init[1] = "none_"
+                        destination_target.attr("class", classes_dest.join(" "))
+                        initial_target.attr("class", classes_init.join(" "))
+                        deselect_square()
+                        square_destination = null;
 
                     }
                 })
-                square_selected = null;
-                square_destination = null;
             } 
            // If clicked square is already selected or blank illegal move, deselect square
             else if (square_selected == square_destination){

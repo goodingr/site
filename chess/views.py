@@ -32,6 +32,4 @@ def move(request, move):
 def legalmoves(request, position):
     # TODO Exceptions for no piece at position
     legal_moves = BOARDS[0].generate_legal_moves(position)
-    
-
     return JsonResponse(legal_moves, safe=False)
