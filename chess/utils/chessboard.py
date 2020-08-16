@@ -198,7 +198,70 @@ class Chessboard:
         self._board = temp_board
 
 
+    def generate_bishop_moves(self, bishop):
+        
 
+    def generate_knight_moves(self, knight):
+        legal_moves = []
+        color = knight.color
+        row, col = self.convert_to_index(knight.current_position)
+
+        if color == 'w':
+            # Check forward 2 and left/right 1 if in bounds
+            if row < 6 and col < 7:
+                potential_move = self._board[row+2][col+1]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row + 2, col + 1)
+                    legal_moves.append(legal_move)
+            if row < 6 and col > 0:
+                potential_move = self._board[row+2][col-1]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row + 2, col - 1)
+                    legal_moves.append(legal_move)
+            # Check back 2 and left/right 1
+            if row > 1 and col < 7:
+                potential_move = self._board[row-2][col+1]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row - 2, col + 1)
+                    legal_moves.append(legal_move)
+            if row > 1 and col > 0:
+                potential_move = self._board[row-2][col-1]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row - 2, col - 1)
+                    legal_moves.append(legal_move)
+            # Check 2 right and 1 up/down
+            if col < 6 and row < 7:
+                potential_move = self._board[row+1][col+2]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row + 1, col + 2)
+                    legal_moves.append(legal_move)
+            if col < 6 and row > 0:
+                potential_move = self._board[row-1][col+2]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row - 1, col + 2)
+                    legal_moves.append(legal_move)
+            # 2 left and 1 up/down
+            if col > 1 and row < 7:
+                potential_move = self._board[row+1][col-2]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row + 1, col - 2)
+                    legal_moves.append(legal_move)
+            if col > 1 and row > 0:
+                potential_move = self._board[row-1][col-2]
+                # Empty square or enemy piece
+                if potential_move.name == 'Blank' or potential_move.color == 'b':
+                    legal_move = self.convert_to_position(row - 1, col - 2)
+                    legal_moves.append(legal_move)
+        
+        return legal_moves
+                
     # Returns all legal pawn moves for the given pawn piece
     # TODO EN PESSANT
     def generate_pawn_moves(self, pawn):
@@ -271,6 +334,8 @@ class Chessboard:
 
         if piece.name == "Pawn":
             legal_moves = self.generate_pawn_moves(piece)
+        if piece.name == "Knight":
+            legal_moves = self.generate_knight_moves(piece)
 
         return legal_moves
 
@@ -285,6 +350,15 @@ class Chessboard:
 
     # Changes state of board. Changes value of board array
     def change_board_state(self, initial, destination):
+        irow, icol = self.convert_to_index(initial)
+        drow, dcol = self.convert_to_index(destination)
+
+        # Change the pieces position and update the array
+        moving_piece = self._board[irow][icol]
+        moving_piece.current_position = destination
+        self._board[drow][dcol] = moving_piece
+        # Set the initial square to blank
+        self._board[irow][icol] = Blank(initial)
         return
 
     # If move is legal, change chessboard state

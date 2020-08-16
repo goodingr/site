@@ -25,16 +25,12 @@ $(document).ready(function() {
     var legal_moves = []
     var initial_target, destination_target
 
-    // When a piece is clicked, determine whether to select the square or
-    // attemp to move the piece on the selected square to the clicked square (destination)
-    $(document).on('click', '.piece', (event) => {
-        const target = $(event.target);
-
-        // A square has not been selected yet and the piece clicked is not blank
-        if(!square_selected && !target.hasClass('none_')){
-            // Set square_selected to the clicked piece and TODO highlight it and it's legal moves
-            select_square(target);
-            //TODO Request legal moves for selected piece and mark them
+    var get_legal_moves = function() {
+        if (!square_selected){
+            console.log("ERROR: get_legal_moves NO SQUARE SELECTED")
+            return
+        }
+         // Request legal moves for selected piece and mark them
             url = "board/legalmoves/" + square_selected
             $.ajax({
                 url: url,
@@ -45,6 +41,18 @@ $(document).ready(function() {
                     legal_moves = data
                 }
             })
+    }
+
+    // When a piece is clicked, determine whether to select the square or
+    // attemp to move the piece on the selected square to the clicked square (destination)
+    $(document).on('click', '.piece', (event) => {
+        const target = $(event.target);
+
+        // A square has not been selected yet and the piece clicked is not blank
+        if(!square_selected && !target.hasClass('none_')){
+            // Set square_selected to the clicked piece and TODO highlight it and it's legal moves
+            select_square(target);
+            get_legal_moves()
 
         }
         // A square has already been selected.
@@ -86,6 +94,7 @@ $(document).ready(function() {
             // clicked square becomes newly selected piece
             else {
                 select_square(target)
+                get_legal_moves()
             }
         }
     })
