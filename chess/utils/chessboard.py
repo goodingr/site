@@ -11,7 +11,16 @@ class Piece:
         self.color = ''
         self.label = ''
         self.name = ''
-        self.html_class = 'piece'
+        self._html_class = 'piece '
+
+    @property
+    def html_class(self):
+        html_class = self._html_class + self.label + ' square-' + self.current_position
+        return html_class
+
+    @html_class.setter
+    def html_class(self, new_class):
+        self._html_class = new_class
 
     def __str__(self):
         return self.label + self.current_position
@@ -37,6 +46,7 @@ class Knight(Piece):
         self.color = color
         self.label = color + "n"
 
+
 class Bishop(Piece):
     def __init__(self, current_position, color):
         super().__init__()
@@ -46,6 +56,7 @@ class Bishop(Piece):
         self.color = color
         self.label = color + "b"
 
+
 class Rook(Piece):
     def __init__(self, current_position, color):
         super().__init__()
@@ -54,6 +65,7 @@ class Rook(Piece):
         self.current_position = current_position
         self.color = color
         self.label = color + "r"
+
 
 class Queen(Piece):
     def __init__(self, current_position, color):
@@ -72,6 +84,15 @@ class King(Piece):
         self.current_position = current_position
         self.color = color
         self.label = color + "k"
+        self.in_check = False
+
+    @Piece.html_class.getter
+    def html_class(self):
+        html = super().html_class
+        if self.in_check:
+            html += ' check'
+        return html
+
 
 class Blank(Piece):
     def __init__(self, current_position):
@@ -102,6 +123,11 @@ class Chessboard:
         # (0,7) = h1 or '81'
         # Includes blank pieces
         self._board = []
+
+        # White king starts on e1, black on e8
+        # Used to see if king is in check, updated when moved
+        self.king_positions = ['51', '58']
+
 
         valid_fen = bool(regex.match(config.FEN_NOTATION_REGEX, fen_notation))
         if not valid_fen:
@@ -155,7 +181,8 @@ class Chessboard:
         pieces_html = ''
         for row in self._board:
             for piece in row:
-                pieces_html += "<div id='" + piece.current_position + "' class='piece " + piece.label + " square-" + piece.current_position + "'></div>"
+                html_class = piece.html_class
+                pieces_html += "<div id='" + piece.current_position + "' class='" + html_class + "'></div>"
 
         return pieces_html
 
@@ -196,6 +223,11 @@ class Chessboard:
 
                 else:
                     board_row.append(self.create_piece(pos, character))
+                    # Track position of kings
+                    if character == "K":
+                        self.king_positions[0] = pos
+                    if character == "k":
+                        self.king_positions[1] = pos
                     file += 1
         temp_board[rank-1] = board_row
 
@@ -551,7 +583,7 @@ class Chessboard:
 
         # TODO Special King Moves
 
-        # TODO Simulate each move and check if king is attacked
+        # TODO Simulate each move and check if mover's king becomes
         legal_moves[:] = [move for move in legal_moves if not self.temp_move_check(position, move)]
 
         return legal_moves
@@ -716,9 +748,49 @@ class Chessboard:
 
     # Return true if the temp move puts the mover's king in check
     def temp_move_check(self, initial, destination):
+        irow, icol = self.convert_to_index(initial)
+        drow, dcol = self.convert_to_index(destination)
+        moving_piece = self._board[irow][icol]
+        destination_piece = self._board[drow][dcol]
 
 
+        # Make the move on the temp board and check if king is attacked
+        moving_piece.current_position = destination
+        color = moving_piece.color
+        self._board[drow][dcol] = moving_piece
+        blank = Blank(initial)
+        self._board[irow][icol] = blank
+
+        if moving_piece.name == "King":
+            if color == 'w':
+                self.king_positions[0] = destination
+            else:
+                self.king_positions[1] = destination
+
+        def undo():
+            print(self._board[drow][dcol])
+            moving_piece.current_position = initial
+            self._board[irow][icol] = moving_piece
+            self._board[drow][dcol] = destination_piece
+            print(self._board[drow][dcol])
+
+            if moving_piece.name == "King":
+                if color == 'w':
+                    self.king_positions[0] = initial
+                else:
+                    self.king_positions[1] = initial
+
+
+        if color == 'w' and self.is_under_attack(self.king_positions[0], 'w'):
+            undo()
+            return True
+        if color == 'b' and self.is_under_attack(self.king_positions[1], 'b'):
+            undo()
+            return True
+        undo()
         return False
+
+    
 
     # returns true if destination is in the list of legal moves for the initial position
     def is_legal_move(self, initial, destination):
@@ -728,26 +800,69 @@ class Chessboard:
 
     # Changes state of board. 
     # Changes value of board array
+    # If king moves, changes king_positions
     def change_board_state(self, initial, destination):
         irow, icol = self.convert_to_index(initial)
         drow, dcol = self.convert_to_index(destination)
 
+        changes = []
 
         # Change the pieces position and update the array
         moving_piece = self._board[irow][icol]
         moving_piece.current_position = destination
+        color = moving_piece.color
         self._board[drow][dcol] = moving_piece
         # Set the initial square to blank
-        self._board[irow][icol] = Blank(initial)
-        return
+        blank = Blank(initial)
+        self._board[irow][icol] = blank
+
+        change = {
+            "position": destination,
+            "class": moving_piece.html_class
+            }
+        changes.append(change)
+        change = {  "position": initial,
+                    "class": blank.html_class }
+
+        changes.append(change)
+
+        # Track king position for determining check
+        if moving_piece.name == "King":
+            if color == 'w':
+                self.king_positions[0] = destination
+            else:
+                self.king_positions[1] = destination
+
+        white_king_pos, black_king_pos = self.king_positions[0], self.king_positions[1]
+
+        # See if opposite king is under attack
+        if color == 'w' and self.is_under_attack(black_king_pos):
+            row, col = self.convert_to_index(black_king_pos)
+            black_king = self._board[row][col]
+            black_king.in_check = True
+            king_html = black_king.html_class
+            change = { "position": black_king_pos, "class": king_html }
+            changes.append(change)
+        # See if opposite king is under attack
+        if color == 'b' and self.is_under_attack(white_king_pos):
+            row, col = self.convert_to_index(white_king_pos)
+            white_king = self._board[row][col]
+            white_king.in_check = True
+            king_html = white_king.html_class
+            change = { "position": white_king_pos, "class": king_html }
+            changes.append(change)
+
+        return changes
+
+
 
     # If move is legal, change chessboard state and white_to_move
     def move(self, initial, destination):
+        changes = []
         if self.is_legal_move(initial, destination):
-            self.change_board_state(initial, destination)
-
+            changes = self.change_board_state(initial, destination)
             self.white_to_move = not self.white_to_move
-        return
+        return changes
 
 
 

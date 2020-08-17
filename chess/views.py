@@ -18,14 +18,21 @@ def move(request, move):
     positions = move.split(',')
     destination = positions[1]
     initial = positions[0]
+    changes = []
 
     try:
-        BOARDS[0].move(initial, destination)
+        changes = BOARDS[0].move(initial, destination)
     except exceptions.InvalidMoveError as error:
         print(error)
         return JsonResponse({'success': False})
 
-    data = { 'success': True }
+    data = { 'success': True,
+             'changes': changes }
+
+    # data = {'success': True,
+    #         'changes': [{'position': '12', 'class': 'piece wp square-14'}]
+    #         }
+
     return JsonResponse(data)
 
 # Returns list of legal moves for the piece at the position

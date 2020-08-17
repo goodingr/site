@@ -76,16 +76,24 @@ $(document).ready(function() {
                     success: function(data) {
                         console.log("move response: ")
                         console.log(data)
-                        // TODO If success, update board display
-                        classes_dest = destination_target.attr("class").split(" ")
-                        classes_init = initial_target.attr("class").split(" ")
-                        classes_dest[1] = classes_init[1]
-                        classes_init[1] = "none_"
-                        destination_target.attr("class", classes_dest.join(" "))
-                        initial_target.attr("class", classes_init.join(" "))
+                        console.log(data.changes[0])
+          
+                        // // TODO If success, update board display
+                        // classes_dest = destination_target.attr("class").split(" ")
+                        // classes_init = initial_target.attr("class").split(" ")
+                        // classes_dest[1] = classes_init[1]
+                        // classes_init[1] = "none_"
+                        // destination_target.attr("class", classes_dest.join(" "))
+                        // initial_target.attr("class", classes_init.join(" "))
+
                         deselect_square()
                         square_destination = null;
 
+                        for (i = 0; i < data.changes.length; i++) {
+                            let id =  '#' + data.changes[i].position
+                            $(id).attr('class', data.changes[i].class)
+                        }
+                        
                     }
                 })
             } 

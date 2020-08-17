@@ -44,6 +44,12 @@
     border-radius: 50%;
     background-clip: content-box;
 }
+.check {
+    background-color: rgba(255,0,0,1);
+}
+.check.highlighted {
+    background-color: orange;
+}
 
 .piece.wp {
     background-image: url("../img/WhitePawn.png");
