@@ -95,8 +95,12 @@ class Chessboard:
         self._moves = 0
         self._half_moves = 0
 
+        self.white_to_move = True
+
         # board is a 8x8 array of the pieces on the board
-        # Includes blank pieces for use with FEN notation
+        # (0,0) = a1 or '11'
+        # (0,7) = h1 or '81'
+        # Includes blank pieces
         self._board = []
 
         valid_fen = bool(regex.match(config.FEN_NOTATION_REGEX, fen_notation))
@@ -160,8 +164,8 @@ class Chessboard:
         # Extract parameters for Chessboard class from the notation
         fen_components = fen_notation.split(' ')
         game_component = fen_components[0]
-        move = 0 if fen_components[1]=='w' else 1
-        castling_infop = fen_components[2]
+        self.white_to_move = True if fen_components[1]=='w' else False
+        castling_info = fen_components[2]
         enpassant_target_square = fen_components[3]
         half_move = int(fen_components[4])
         full_move = int(fen_components[5])
@@ -198,67 +202,198 @@ class Chessboard:
         self._board = temp_board
 
 
+    def are_opposite_color(self, a, b):
+        if a.color == 'w' and b.color == 'b':
+            return True
+        if a.color == 'b' and b.color == 'w':
+            return True
+        return False
+
     def generate_bishop_moves(self, bishop):
+        legal_moves = []
+        row, col = self.convert_to_index(bishop.current_position)
+        color = bishop.color
+
+        # column and row of potential move
+        check_row, check_col = row + 1, col + 1
+        # up and right
+        while check_row <= 7 and check_col <= 7:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(bishop, self._board[check_row][check_col]):
+                break;
+            check_row += 1
+            check_col += 1
+        check_row, check_col = row - 1, col - 1
+        # Down and Left
+        while check_row >= 0 and check_col >= 0:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(bishop, self._board[check_row][check_col]):
+                break;
+            check_row -= 1
+            check_col -= 1
+        check_row, check_col = row + 1, col - 1
+        # Up and Left
+        while check_row <= 7 and check_col >= 0:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(bishop, self._board[check_row][check_col]):
+                break;
+            check_row += 1
+            check_col -= 1
+        check_row, check_col = row - 1, col + 1
+        # Down and Right
+        while check_row >= 0 and check_col <= 7:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(bishop, self._board[check_row][check_col]):
+                break;
+            check_row -= 1
+            check_col += 1
+
+        return legal_moves
+
+    # Vertical and Horizontal Moves
+    def generate_rook_moves(self, rook):
+        legal_moves = []
+        color = rook.color
+        row, col = self.convert_to_index(rook.current_position)
         
+        # Up
+        check_row, check_col = row + 1, col
+        while check_row <= 7:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(rook, self._board[check_row][check_col]):
+                break;
+            check_row += 1
+        # Down
+        check_row = row - 1
+        while check_row >= 0:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(rook, self._board[check_row][check_col]):
+                break;
+            check_row -= 1
+        # Right
+        check_row = row
+        check_col = col + 1
+        while check_col <= 7:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(rook, self._board[check_row][check_col]):
+                break;
+            check_col += 1
+
+        check_col = col - 1
+        while check_col >= 0:
+            # If the same color, stop 
+            if self._board[check_row][check_col].color == color:
+                break;
+            # Either blank or opposite color so must be legal
+            legal_move = self.convert_to_position(check_row, check_col)
+            legal_moves.append(legal_move)
+            # If opposite color, stop after adding to legal moves
+            if self.are_opposite_color(rook, self._board[check_row][check_col]):
+                break;
+            check_col -= 1
+        return legal_moves
+
 
     def generate_knight_moves(self, knight):
         legal_moves = []
         color = knight.color
         row, col = self.convert_to_index(knight.current_position)
 
-        if color == 'w':
-            # Check forward 2 and left/right 1 if in bounds
-            if row < 6 and col < 7:
-                potential_move = self._board[row+2][col+1]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row + 2, col + 1)
-                    legal_moves.append(legal_move)
-            if row < 6 and col > 0:
-                potential_move = self._board[row+2][col-1]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row + 2, col - 1)
-                    legal_moves.append(legal_move)
-            # Check back 2 and left/right 1
-            if row > 1 and col < 7:
-                potential_move = self._board[row-2][col+1]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row - 2, col + 1)
-                    legal_moves.append(legal_move)
-            if row > 1 and col > 0:
-                potential_move = self._board[row-2][col-1]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row - 2, col - 1)
-                    legal_moves.append(legal_move)
-            # Check 2 right and 1 up/down
-            if col < 6 and row < 7:
-                potential_move = self._board[row+1][col+2]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row + 1, col + 2)
-                    legal_moves.append(legal_move)
-            if col < 6 and row > 0:
-                potential_move = self._board[row-1][col+2]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row - 1, col + 2)
-                    legal_moves.append(legal_move)
-            # 2 left and 1 up/down
-            if col > 1 and row < 7:
-                potential_move = self._board[row+1][col-2]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row + 1, col - 2)
-                    legal_moves.append(legal_move)
-            if col > 1 and row > 0:
-                potential_move = self._board[row-1][col-2]
-                # Empty square or enemy piece
-                if potential_move.name == 'Blank' or potential_move.color == 'b':
-                    legal_move = self.convert_to_position(row - 1, col - 2)
-                    legal_moves.append(legal_move)
+    
+        # Check forward 2 and left/right 1 if in bounds
+        if row < 6 and col < 7:
+            potential_move = self._board[row+2][col+1]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row + 2, col + 1)
+                legal_moves.append(legal_move)
+        if row < 6 and col > 0:
+            potential_move = self._board[row+2][col-1]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row + 2, col - 1)
+                legal_moves.append(legal_move)
+        # Check back 2 and left/right 1
+        if row > 1 and col < 7:
+            potential_move = self._board[row-2][col+1]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row - 2, col + 1)
+                legal_moves.append(legal_move)
+        if row > 1 and col > 0:
+            potential_move = self._board[row-2][col-1]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row - 2, col - 1)
+                legal_moves.append(legal_move)
+        # Check 2 right and 1 up/down
+        if col < 6 and row < 7:
+            potential_move = self._board[row+1][col+2]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row + 1, col + 2)
+                legal_moves.append(legal_move)
+        if col < 6 and row > 0:
+            potential_move = self._board[row-1][col+2]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row - 1, col + 2)
+                legal_moves.append(legal_move)
+        # 2 left and 1 up/down
+        if col > 1 and row < 7:
+            potential_move = self._board[row+1][col-2]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row + 1, col - 2)
+                legal_moves.append(legal_move)
+        if col > 1 and row > 0:
+            potential_move = self._board[row-1][col-2]
+            # Empty square or enemy piece
+            if potential_move.name == 'Blank' or self.are_opposite_color(knight, potential_move):
+                legal_move = self.convert_to_position(row - 1, col - 2)
+                legal_moves.append(legal_move)
         
         return legal_moves
                 
@@ -271,15 +406,16 @@ class Chessboard:
         rank = int(pawn.current_position[1])
         file = int(pawn.current_position[0])
         # White Pawn    
-        if color == 'w':
+        if color == 'w' and row < 7:
             # 1 space ahead of pawn
             if self._board[row+1][col].name == 'Blank':
                 legal_move = self.convert_to_position(row + 1, col)
                 legal_moves.append(legal_move)
                 # Check for 2 space move
-                if self._board[row+2][col].name == 'Blank' and row == 1:
-                    legal_move = self.convert_to_position(row + 2, col)
-                    legal_moves.append(legal_move)
+                if row == 1:
+                    if self._board[row+2][col].name == 'Blank':
+                        legal_move = self.convert_to_position(row + 2, col)
+                        legal_moves.append(legal_move)
             if col < 7:
                 diagonal = self._board[row+1][col+1]
                 # diagonal right 
@@ -293,32 +429,94 @@ class Chessboard:
                     legal_move = self.convert_to_position(row + 1, col - 1)
                     legal_moves.append(legal_move)
         # Black
-        elif color == 'b':
+        elif color == 'b' and row < 7:
             # 1 space ahead of pawn
             if self._board[row-1][col].name == 'Blank':
                 legal_move = self.convert_to_position(row - 1, col)
                 legal_moves.append(legal_move)
                 # Check for 2 space move
-                if self._board[row-2][col].name == 'Blank' and row == 6:
-                    legal_move = self.convert_to_position(row - 2, col)
-                    legal_moves.append(legal_move)
+                if row == 6:
+                    if self._board[row-2][col].name == 'Blank':
+                        legal_move = self.convert_to_position(row - 2, col)
+                        legal_moves.append(legal_move)
             if col < 7:
                 diagonal = self._board[row-1][col+1]
                 # diagonal right 
-                if diagonal.color == "b":
+                if diagonal.color == "w":
                     legal_move = self.convert_to_position(row - 1, col + 1)
                     legal_moves.append(legal_move)
             if col > 0:        
                 diagonal = self._board[row-1][col-1]
                 # diagonal left
-                if diagonal.color == "b":
+                if diagonal.color == "w":
                     legal_move = self.convert_to_position(row - 1, col - 1)
                     legal_moves.append(legal_move)
 
         return legal_moves
 
 
+    # Returns legal King moves in any direction that don't put the King under attack
+    def generate_king_moves(self, king):
+        legal_moves = []
+        color = king.color
+        row, col = self.convert_to_index(king.current_position)
 
+        # Up
+        if row < 7:
+            check_square = self._board[row + 1][col]
+            if check_square.color != color:
+                move = self.convert_to_position(row + 1, col)
+                legal_moves.append(move)
+        # Down
+        if row > 0:
+            check_square = self._board[row - 1][col]
+            if check_square.color != color:
+                move = self.convert_to_position(row - 1, col)
+                legal_moves.append(move)
+        # Right
+        if col < 7:
+            check_square = self._board[row][col + 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row, col + 1)
+                legal_moves.append(move)
+        # Left
+        if col > 0:
+            check_square = self._board[row][col - 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row, col - 1)
+                legal_moves.append(move)
+        # Up Right
+        if row < 7 and col < 7:
+            check_square = self._board[row + 1][col + 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row + 1, col + 1)
+                legal_moves.append(move)
+        # Down Left
+        if row > 0 and col > 0:
+            check_square = self._board[row - 1][col - 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row - 1, col - 1)
+                legal_moves.append(move)
+        # Up Left
+        if row < 7 and col > 0:
+            check_square = self._board[row + 1][col - 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row + 1, col - 1)
+                legal_moves.append(move)
+        # Down Right
+        if row > 0 and col < 7:
+            check_square = self._board[row - 1][col + 1]
+            if check_square.color != color:
+                move = self.convert_to_position(row - 1, col + 1)
+                legal_moves.append(move)
+
+
+
+
+        # Remove moves to squares that are attacked
+        legal_moves[:] = [move for move in legal_moves if not self.is_under_attack(move, color)]
+
+        return legal_moves
 
     # returns a list of legal moves for the piece in the position
     def generate_legal_moves(self, position):
@@ -327,20 +525,200 @@ class Chessboard:
 
         #move this to helper function
         file = int(position[1])
-        rank = int(position[0])
-        
+        rank = int(position[0])        
 
         piece = self._board[file -1][rank -1]
+
+        # Check whos turn it is
+        if piece.color == 'w' and not self.white_to_move:
+            return []
+        if piece.color == 'b' and self.white_to_move:
+            return []
 
         if piece.name == "Pawn":
             legal_moves = self.generate_pawn_moves(piece)
         if piece.name == "Knight":
             legal_moves = self.generate_knight_moves(piece)
+        if piece.name == "Bishop":
+            legal_moves = self.generate_bishop_moves(piece)
+        if piece.name == "Rook":
+            legal_moves = self.generate_rook_moves(piece)
+        if piece.name == "Queen":
+            legal_moves = self.generate_rook_moves(piece) + self.generate_bishop_moves(piece)
+        if piece.name == "King":
+            legal_moves = self.generate_king_moves(piece)
+
+
+        # TODO Special King Moves
+
+        # TODO Simulate each move and check if king is attacked
+        legal_moves[:] = [move for move in legal_moves if not self.temp_move_check(position, move)]
 
         return legal_moves
 
+    # Return true if the square is under attack from the perspective of 'color'
+    def is_under_attack(self, position, color = None):
+        row, col = self.convert_to_index(position)
+        if color == None:
+            color = self._board[row][col].color
+
+        # Check Horizontal
+        for check_col in range(col + 1, 8):
+            check_square = self._board[row][check_col]
+
+            # True if opposite color king is next to position
+            if check_col == col + 1 and check_square.name == "King" and color != check_square.color:
+                return True
+
+            if (check_square.name == "Rook" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Bishop", "Knight", "Pawn", "King"]:
+                break;
+        for check_col in range(col - 1, -1, -1):
+            check_square = self._board[row][check_col]
+
+            # True if opposite color king is next to position
+            if check_col == col - 1 and check_square.name == "King" and color != check_square.color:
+                return True
+
+            if (check_square.name == "Rook" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Bishop", "Knight", "Pawn", "King"]:
+                break;
+
+        # Check Vertical
+        for check_row in range(row + 1, 8):
+            check_square = self._board[check_row][col]
+
+            # True if opposite color king is next to position
+            if check_row == row + 1 and check_square.name == "King" and color != check_square.color:
+                return True
+
+            if (check_square.name == "Rook" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Bishop", "Knight", "Pawn", "King"]:
+                break;
+        for check_row in range(row - 1, -1, -1):
+            check_square = self._board[check_row][col]
+
+            # True if opposite color king is next to position
+            if check_row == row - 1 and check_square.name == "King" and color != check_square.color:
+                return True
+
+            if (check_square.name == "Rook" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Bishop", "Knight", "Pawn", "King"]:
+                break;
+        # Up Right
+        check_row, check_col = row + 1, col + 1
+        while check_row < 8 and check_col < 8:
+            check_square = self._board[check_row][check_col]
+
+            # King or Pawn diagonal to attacked square
+            if check_row == row + 1 and check_col == col + 1 and (check_square.name == "King" or check_square.name == "Pawn") and color != check_square.color:
+                return True
+
+            if (check_square.name == "Bishop" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Rook", "Knight", "Pawn", "King"]:
+                break;
+
+            check_row += 1
+            check_col += 1
+
+        # Down Left
+        check_row, check_col = row - 1, col - 1
+        while check_row > 0 and check_col > 0:
+            check_square = self._board[check_row][check_col]
+
+            # King or Pawn diagonal to attacked square
+            if check_row == row - 1 and check_col == col - 1 and (check_square.name == "King" or check_square.name == "Pawn") and color != check_square.color:
+                return True
+
+            if (check_square.name == "Bishop" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Rook", "Knight", "Pawn", "King"]:
+                break;
+
+            check_row -= 1
+            check_col -= 1
+
+        # Up Left
+        check_row, check_col = row + 1, col - 1
+        while check_row < 8 and check_col > 0:
+            check_square = self._board[check_row][check_col]
+
+            # King or Pawn diagonal to attacked square
+            if check_row == row + 1 and check_col == col - 1 and (check_square.name == "King" or check_square.name == "Pawn") and color != check_square.color:
+                return True
+
+            if (check_square.name == "Bishop" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Rook", "Knight", "Pawn", "King"]:
+                break;
+
+            check_row += 1
+            check_col -= 1
+        # Down Right
+        check_row, check_col = row - 1, col + 1
+        while check_row > 0 and check_col < 8:
+            check_square = self._board[check_row][check_col]
+
+            # King or Pawn diagonal to attacked square
+            if check_row == row - 1 and check_col == col + 1 and (check_square.name == "King" or check_square.name == "Pawn") and color != check_square.color:
+                return True
+
+            if (check_square.name == "Bishop" or check_square.name == "Queen") and color != check_square.color:
+                return True
+
+            if check_square.color == color:
+                break;
+            if check_square.name in ["Rook", "Knight", "Pawn", "King"]:
+                break;
+
+            check_row -= 1
+            check_col += 1
+
+        # Check skews for knight moves
+        skews = [(2,1),(2,-1),(-2,1),(-2,-1),(1, 2),(-1,2),(1,-2),(-1,-2)]
+        for skew in skews:
+            check_row = row + skew[0]
+            check_col = col + skew[1]
+
+            if check_row < 8 and check_row >= 0 and check_col < 8 and check_col >=0:
+                check_square = self._board[check_row][check_col]
+                if check_square.name == "Knight" and check_square.color != color:
+                    return True
 
 
+
+
+    # Return true if the temp move puts the mover's king in check
+    def temp_move_check(self, initial, destination):
+
+
+        return False
 
     # returns true if destination is in the list of legal moves for the initial position
     def is_legal_move(self, initial, destination):
@@ -348,10 +726,12 @@ class Chessboard:
             return True
         return False
 
-    # Changes state of board. Changes value of board array
+    # Changes state of board. 
+    # Changes value of board array
     def change_board_state(self, initial, destination):
         irow, icol = self.convert_to_index(initial)
         drow, dcol = self.convert_to_index(destination)
+
 
         # Change the pieces position and update the array
         moving_piece = self._board[irow][icol]
@@ -361,10 +741,12 @@ class Chessboard:
         self._board[irow][icol] = Blank(initial)
         return
 
-    # If move is legal, change chessboard state
+    # If move is legal, change chessboard state and white_to_move
     def move(self, initial, destination):
         if self.is_legal_move(initial, destination):
             self.change_board_state(initial, destination)
+
+            self.white_to_move = not self.white_to_move
         return
 
 

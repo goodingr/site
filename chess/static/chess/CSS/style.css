@@ -28,7 +28,21 @@
 
 }
 .highlighted {
-    background-color: yellow;
+    background-color: rgba(255,255,0,.6);
+}
+.hint {
+    height: 12.5%;
+    left: 0;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 12.5%;
+    padding: 4.3%;
+    pointer-events: none;
+    box-sizing: border-box;
+    background-color: rgba(0,0,0,.2);
+    border-radius: 50%;
+    background-clip: content-box;
 }
 
 .piece.wp {

@@ -39,3 +39,26 @@ class BoardTestCase(TestCase):
         moves = board.generate_legal_moves('13')
         legal = []
         self.assertEqual(set(moves), set(legal))
+
+    # Test board's white_to_move after loading from fen notation
+    def test_initial_move(self):
+        # White to move
+        fen_notation = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        board = chessboard.Chessboard(fen_notation)
+
+        self.assertEqual(True, board.white_to_move)
+
+        # Black to move
+        fen_notation = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1"
+        board = chessboard.Chessboard(fen_notation)
+        self.assertEqual(False, board.white_to_move)
+
+    # Tests king moving to attacked squares
+    # Tests squares attacked by rook vertically, bishop diagonally, and knight
+    def test_king_moves(self):
+        fen_notation = "2r4k/8/8/5n1b/8/8/3K4/8 w - - 0 1"
+
+        board = chessboard.Chessboard(fen_notation)
+        moves = board.generate_legal_moves("42")
+        legal = ['43', '51']
+        self.assertEqual(set(moves), set(legal))

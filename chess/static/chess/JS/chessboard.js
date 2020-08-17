@@ -18,6 +18,7 @@ $(document).ready(function() {
         target.removeClass('highlighted')
         square_selected = null
         legal_moves = []
+        $(".hint").remove()
     }
 
     
@@ -39,6 +40,10 @@ $(document).ready(function() {
                     // should probably call select_square here
                     console.log("legal moves: " + data)
                     legal_moves = data
+                    for (i = 0; i < legal_moves.length; i++){
+                        hint = "<div class='hint square-" + legal_moves[i] + "' ></div>"
+                        $(".board").append(hint)
+                    }
                 }
             })
     }
