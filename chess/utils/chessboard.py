@@ -105,10 +105,21 @@ class Blank(Piece):
 #Class for chessboard
 class Chessboard:
     def __init__(self, fen_notation=config.START_POSITION_NOTATION):
-        self._pieces = {
-            'white': {},
-            'black': {},
+
+
+        self.castling_rights_w = {
+            "has_castled": False,
+            "rook_a_moved": False,
+            "rook_h_moved": False,
+            "king_moved": False
         }
+        self.castling_rights_b = {
+            "has_castled": False,
+            "rook_a_moved": False,
+            "rook_h_moved": False,
+            "king_moved": False
+        }
+
 
         self._enpassant_target_square = None
         self._enpessant_flag_life = 0
@@ -133,6 +144,8 @@ class Chessboard:
         if not valid_fen:
             fen_notation = config.START_POSITION_NOTATION
         self.load_position(fen_notation)
+
+
 
 
     # converts file|rank position notation to (row, col) for 2d array _board index
@@ -232,6 +245,20 @@ class Chessboard:
         temp_board[rank-1] = board_row
 
         self._board = temp_board
+
+        # Detime castling rights from FEN notation
+        if '-' in castling_info:
+            self.castling_rights_w['king_moved'] = True
+            self.castling_rights_b['king_moved'] = True
+        if 'Q' not in castling_info:
+            self.castling_rights_w['rook_a_moved'] = True
+        if 'K' not in castling_info:
+            self.castling_rights_w['rook_h_moved'] = True
+        if 'q' not in castling_info:
+            self.castling_rights_b['rook_a_moved'] = True
+        if 'k' not in castling_info:
+            self.castling_rights_b['rook_h_moved'] = True
+
 
 
     def are_opposite_color(self, a, b):
@@ -542,13 +569,47 @@ class Chessboard:
                 move = self.convert_to_position(row - 1, col + 1)
                 legal_moves.append(move)
 
-
+        # Castling
+        if self.can_castle(color):
+            if color == 'w':
+                # White can castle Kingside
+                if self._board[0][5].name == "Blank" and self._board[0][6].name == "Blank":
+                    if not (self.is_under_attack('61', color) or self.is_under_attack('71', color)):
+                        move = '71'
+                        legal_moves.append(move)
+                if self._board[0][3].name == "Blank" and self._board[0][2].name == "Blank" and self._board[0][1].name == "Blank":
+                    if not(self.is_under_attack('41', color) or self.is_under_attack('31', color)):
+                        move = '31'
+                        legal_moves.append(move)
+            if color == 'b':
+                # Blank can castle Kingside
+                if self._board[7][5].name == "Blank" and self._board[7][6].name == "Blank":
+                    if not (self.is_under_attack('68', color) or self.is_under_attack('78', color)):
+                        move = '78'
+                        legal_moves.append(move)
+                if self._board[7][3].name == "Blank" and self._board[7][2].name == "Blank" and self._board[7][1].name == "Blank":
+                    if not(self.is_under_attack('48', color) or self.is_under_attack('38', color)):
+                        move = '38'
+                        legal_moves.append(move)
 
 
         # Remove moves to squares that are attacked
         legal_moves[:] = [move for move in legal_moves if not self.is_under_attack(move, color)]
 
         return legal_moves
+
+
+
+    # Return true if the given color still has castling rights
+    def can_castle(self, color):
+        if color == 'w':
+            if not(self.castling_rights_w['king_moved'] or self.castling_rights_w['rook_a_moved'] or self.castling_rights_w['rook_h_moved'] or self.castling_rights_w['has_castled']):
+                return True
+        if color == 'b':
+            if not(self.castling_rights_b['king_moved'] or self.castling_rights_b['rook_a_moved'] or
+                   self.castling_rights_b['rook_h_moved'] or self.castling_rights_b['has_castled']):
+                return True
+        return False
 
     # returns a list of legal moves for the piece in the position
     def generate_legal_moves(self, position):
@@ -579,6 +640,7 @@ class Chessboard:
             legal_moves = self.generate_rook_moves(piece) + self.generate_bishop_moves(piece)
         if piece.name == "King":
             legal_moves = self.generate_king_moves(piece)
+
 
 
         # TODO Special King Moves
@@ -675,7 +737,7 @@ class Chessboard:
 
         # Down Left
         check_row, check_col = row - 1, col - 1
-        while check_row > 0 and check_col > 0:
+        while check_row >= 0 and check_col > 0:
             check_square = self._board[check_row][check_col]
 
             # King or Pawn diagonal to attacked square
@@ -695,7 +757,7 @@ class Chessboard:
 
         # Up Left
         check_row, check_col = row + 1, col - 1
-        while check_row < 8 and check_col > 0:
+        while check_row < 8 and check_col >= 0:
             check_square = self._board[check_row][check_col]
 
             # King or Pawn diagonal to attacked square
@@ -714,7 +776,7 @@ class Chessboard:
             check_col -= 1
         # Down Right
         check_row, check_col = row - 1, col + 1
-        while check_row > 0 and check_col < 8:
+        while check_row >= 0 and check_col < 8:
             check_square = self._board[check_row][check_col]
 
             # King or Pawn diagonal to attacked square
@@ -790,7 +852,7 @@ class Chessboard:
         undo()
         return False
 
-    
+
 
     # returns true if destination is in the list of legal moves for the initial position
     def is_legal_move(self, initial, destination):
@@ -827,29 +889,108 @@ class Chessboard:
         changes.append(change)
 
         # Track king position for determining check
+        # and update castling rights
+        # If castling, update rook position also
         if moving_piece.name == "King":
             if color == 'w':
                 self.king_positions[0] = destination
+                self.castling_rights_w["king_moved"] = True
+                # Kingside Castle, move rook
+                if initial == '51' and destination == '71':
+                    self.castling_rights_w['has_castled'] = True
+                    rook = self._board[0][7]
+                    rook.current_position = '61'
+                    self._board[0][5] = rook
+                    blank = Blank('81')
+                    self._board[0][7] = blank
+                    change = {"position" : '61', "class": rook.html_class}
+                    changes.append(change)
+                    change = {"position": '81', "class": blank.html_class }
+                    changes.append(change)
+                # Queenside Castle
+                if initial == '51' and destination == '31':
+                    self.castling_rights_w['has_castled'] = True
+                    rook = self._board[0][0]
+                    rook.current_position = '41'
+                    self._board[0][3] = rook
+                    blank = Blank('11')
+                    self._board[0][0] = blank
+                    change = {"position": '41', "class": rook.html_class}
+                    changes.append(change)
+                    change = {"position": '11', "class": blank.html_class }
+                    changes.append(change)
             else:
                 self.king_positions[1] = destination
+                self.castling_rights_b["king_moved"] = True
+                # Kingside Castle, move rook
+                if initial == '58' and destination == '78':
+                    self.castling_rights_b['has_castled'] = True
+                    rook = self._board[7][7]
+                    rook.current_position = '68'
+                    self._board[7][5] = rook
+                    blank = Blank('88')
+                    self._board[7][7] = blank
+                    change = {"position" : '68', "class": rook.html_class}
+                    changes.append(change)
+                    change = {"position": '88', "class": blank.html_class }
+                    changes.append(change)
+                # Queenside Castle
+                if initial == '58' and destination == '38':
+                    self.castling_rights_b['has_castled'] = True
+                    rook = self._board[7][0]
+                    rook.current_position = '48'
+                    self._board[7][3] = rook
+                    blank = Blank('18')
+                    self._board[7][0] = blank
+                    change = {"position": '48', "class": rook.html_class}
+                    changes.append(change)
+                    change = {"position": '18', "class": blank.html_class }
+                    changes.append(change)
+        # Rook moves for tracking castling rights
+        if moving_piece.name == "Rook":
+            # Moving rook on a1
+            if color == 'w' and initial == '11' and not self.castling_rights_w['rook_a_moved']:
+                self.castling_rights_w['rook_a_moved'] = True
+            # h1
+            if color == 'w' and initial == '81' and not self.castling_rights_w['rook_h_moved']:
+                self.castling_rights_w['rook_a_moved'] = True
+            # a8
+            if color == 'b' and initial == '18' and not self.castling_rights_b['rook_a_moved']:
+                self.castling_rights_b['rook_a_moved'] = True
+            # h8
+            if color == 'b' and initial == '88' and not self.castling_rights_b['rook_h_moved']:
+                self.castling_rights_b['rook_a_moved'] = True
+
+
 
         white_king_pos, black_king_pos = self.king_positions[0], self.king_positions[1]
+        wrow, wcol = self.convert_to_index(white_king_pos)
+        brow, bcol = self.convert_to_index(black_king_pos)
+
+        white_king = self._board[wrow][wcol]
+        black_king = self._board[brow][bcol]
+
 
         # See if opposite king is under attack
         if color == 'w' and self.is_under_attack(black_king_pos):
-            row, col = self.convert_to_index(black_king_pos)
-            black_king = self._board[row][col]
             black_king.in_check = True
             king_html = black_king.html_class
             change = { "position": black_king_pos, "class": king_html }
             changes.append(change)
         # See if opposite king is under attack
         if color == 'b' and self.is_under_attack(white_king_pos):
-            row, col = self.convert_to_index(white_king_pos)
-            white_king = self._board[row][col]
             white_king.in_check = True
             king_html = white_king.html_class
             change = { "position": white_king_pos, "class": king_html }
+            changes.append(change)
+        # See if mover's king is no longer in check
+        if color == 'w' and self._board[wrow][wcol].in_check and not self.is_under_attack(white_king_pos):
+            white_king.in_check = False
+            change = { "position": white_king_pos, "class": white_king.html_class }
+            changes.append(change)
+        if color == 'b' and self._board[brow][bcol].in_check and not self.is_under_attack(black_king_pos):
+            black_king.in_check = False
+            change = { "position": black_king_pos, "class": black_king.html_class }
             changes.append(change)
 
         return changes
